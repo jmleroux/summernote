@@ -86,6 +86,40 @@ describe('LinkDialog', () => {
       var linkUrl = dialog.$dialog.find('.note-link-url').val();
       expect(linkUrl).to.equal('parsed-summernote.org');
     });
+    
+    it('should handle errors in custom checker gracefully', () => {
+      range.createFromNode($editable.find('p')[3]).normalize().select();
+      context.options.onCreateLink = () => { throw new Error('test error'); };
+      context.invoke('editor.setLastRange');
+      dialog.show();
+
+      var linkUrl = dialog.$dialog.find('.note-link-url').val();
+      expect(linkUrl).to.equal('summernote.org');
+    });
+
+    it('should ignore non-function custom checker', () => {
+      range.createFromNode($editable.find('p')[3]).normalize().select();
+      context.options.onCreateLink = 'not a function';
+      context.invoke('editor.setLastRange');
+      dialog.show();
+
+      var linkUrl = dialog.$dialog.find('.note-link-url').val();
+      expect(linkUrl).to.equal('http://summernote.org');
+    });
+
+    it('should handle various URL types in custom checker', () => {
+      range.createFromNode($editable.find('p')[3]).normalize().select();
+      context.options.onCreateLink = linkUrl => `custom-${linkUrl}`;
+      context.invoke('editor.setLastRange');
+
+      // Test relative URL
+      dialog.$dialog.find('.note-link-url').val('../relative/path').blur();
+      expect(dialog.$dialog.find('.note-link-url').val()).to.equal('custom-../relative/path');
+
+      // Test URL with query params
+      dialog.$dialog.find('.note-link-url').val('page?param=value').blur();
+      expect(dialog.$dialog.find('.note-link-url').val()).to.equal('custom-page?param=value');
+    });
 
     it('should add http protocol during the onChange event if linkInfo.url is undefined and protocol not exists', () => {
       range.createFromNode($editable.find('p')[4]).normalize().select();

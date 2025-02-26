@@ -7,6 +7,12 @@ const MAILTO_PATTERN = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 const TEL_PATTERN = /^(\+?\d{1,3}[\s-]?)?(\d{1,4})[\s-]?(\d{1,4})[\s-]?(\d{1,4})$/;
 const URL_SCHEME_PATTERN = /^([A-Za-z][A-Za-z0-9+-.]*\:|#|\/)/;
 
+/**
+ * @typedef {Object} LinkDialogOptions
+ * @property {Function} [onCreateLink] - Optional function to override link URL processing.
+ *                                      Takes a URL string and returns the processed URL.
+ */
+
 export default class LinkDialog {
   constructor(context) {
     this.context = context;
@@ -68,7 +74,16 @@ export default class LinkDialog {
 
   checkLinkUrl(linkUrl) {
     if (this.options.onCreateLink) {
-      return this.options.onCreateLink(linkUrl);
+      if (typeof this.options.onCreateLink !== 'function') {
+        console.warn('onCreateLink option must be a function');
+        return linkUrl;
+      }
+      try {
+        return this.options.onCreateLink(linkUrl);
+      } catch (error) {
+        console.error('Error in onCreateLink:', error);
+        return linkUrl;
+      }
     }
     if (MAILTO_PATTERN.test(linkUrl)) {
       return 'mailto://' + linkUrl;
